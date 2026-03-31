@@ -2216,6 +2216,9 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
                     break;
             }
 
+            if(input->group & (PinGroup_Limit | PinGroup_LimitMax))
+                input->mode.debounce = hal.driver_cap.software_debounce;
+
             if(input->group == PinGroup_AuxInput) {
                 if(input->cap.irq_mode != IRQ_Mode_None) {
                     // Map interrupt to pin
@@ -3179,7 +3182,7 @@ static inline void core_pin_irq (uint32_t bit)
     input_signal_t *input;
 
     if((input = pin_irq[__builtin_ffs(bit) - 1])) {
-        if(input->mode.debounce && task_add_delayed(core_pin_debounce, input, 40)) {
+        if(input->mode.debounce && task_add_delayed(core_pin_debounce, input, DEBOUNCE_DELAY)) {
             EXTI->IMR &= ~input->bit; // Disable pin interrupt
         } else
             core_pin_debounce(input);
@@ -3207,7 +3210,7 @@ static inline void aux_pin_irq (uint32_t bit)
     input_signal_t *input;
 
     if((input = pin_irq[__builtin_ffs(bit) - 1]) && input->group == PinGroup_AuxInput) {
-        if(input->mode.debounce && task_add_delayed(aux_pin_debounce, input, 40)) {
+        if(input->mode.debounce && task_add_delayed(aux_pin_debounce, input, DEBOUNCE_DELAY)) {
             EXTI->IMR &= ~input->bit; // Disable pin interrupt
 #if SAFETY_DOOR_ENABLE
             if(input->id == Input_SafetyDoor)
@@ -3408,7 +3411,7 @@ void Driver_IncTick (void)
         bool z_limit = DIGITAL_IN(Z_LIMIT_PORT, Z_LIMIT_PIN) ^ settings.limits.invert.z;
         if(z_limit_state != z_limit) {
             if((z_limit_state = z_limit)) {
-                if(!(z_limit_pin->mode.debounce && task_add_delayed(core_pin_debounce, z_limit_pin, 40)))
+                if(!(z_limit_pin->mode.debounce && task_add_delayed(core_pin_debounce, z_limit_pin, DEBOUNCE_DELAY)))
                     hal.limits.interrupt_callback(limitsGetState());
             }
         }

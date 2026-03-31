@@ -283,6 +283,13 @@
 #define STEP_PULSE_LATENCY 1.0f // microseconds
 #endif
 
+// Software debounce delay in milliseconds for limit switch and auxiliary inputs.
+// Increase this value if limit switches generate false triggers due to noise or bouncing.
+// Can be overridden in my_machine.h.
+#ifndef DEBOUNCE_DELAY
+#define DEBOUNCE_DELAY 40 // milliseconds
+#endif
+
 // End configuration
 
 #include "grbl/driver_opts2.h"
